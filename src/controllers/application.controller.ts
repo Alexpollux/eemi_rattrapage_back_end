@@ -68,7 +68,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response) => {
 export const getApplicationById = async (req: AuthRequest, res: Response) => {
   try {
     const application = await prisma.application.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: { user: { select: { email: true } } }
     })
     if (!application) {
@@ -89,7 +89,7 @@ export const updateStatus = async (req: AuthRequest, res: Response) => {
     }
 
     const application = await prisma.application.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status }
     })
 
