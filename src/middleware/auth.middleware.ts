@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
+import { supabase } from '../lib/supabase'
+import prisma from '../lib/prisma'
 
 export interface AuthRequest extends Request {
   userId?: string
   userRole?: string
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,15 +17,22 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   const token = authHeader.split(' ')[1]
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string
-      role: string
+    const { data, error } = await supabase.auth.getUser(token)
+
+    if (error || !data.user) {
+      return res.status(401).json({ error: 'Token invalide ou expiré' })
     }
-    req.userId = decoded.userId
-    req.userRole = decoded.role
+
+    // Récupérer le rôle depuis notre table
+    const user = await prisma.user.findUnique({
+      where: { id: data.user.id }
+    })
+
+    req.userId = data.user.id
+    req.userRole = user?.role || 'CANDIDAT'
     next()
   } catch {
-    return res.status(401).json({ error: 'Token invalide ou expiré' })
+    return res.status(401).json({ error: 'Token invalide' })
   }
 }
 

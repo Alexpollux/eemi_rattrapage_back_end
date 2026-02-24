@@ -1,6 +1,5 @@
 import { Request, Response } from 'express'
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
+import { supabase } from '../lib/supabase'
 import prisma from '../lib/prisma'
 
 export const register = async (req: Request, res: Response) => {
@@ -11,31 +10,39 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email et mot de passe requis' })
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      return res.status(409).json({ error: 'Email déjà utilisé' })
+    // Inscription via Supabase Auth — envoie l'email de confirmation automatiquement
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT' }
+      }
+    })
+
+    if (error) {
+      return res.status(400).json({ error: error.message })
     }
 
-    const passwordHash = await bcrypt.hash(password, 10)
+    if (!data.user) {
+      return res.status(400).json({ error: 'Erreur lors de la création du compte' })
+    }
 
-    const user = await prisma.user.create({
+    // Créer le profil dans notre table users
+    await prisma.user.create({
       data: {
-        email,
-        passwordHash,
+        id: data.user.id,
+        email: data.user.email!,
         role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
       }
     })
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    )
-
     return res.status(201).json({
-      message: 'Compte créé avec succès',
-      token,
-      user: { id: user.id, email: user.email, role: user.role }
+      message: 'Compte créé avec succès. Vérifiez votre email pour confirmer votre inscription.',
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
+      }
     })
   } catch (error) {
     return res.status(500).json({ error: 'Erreur serveur' })
@@ -50,25 +57,27 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email et mot de passe requis' })
     }
 
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) {
-      return res.status(401).json({ error: 'Identifiants invalides' })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) {
+      return res.status(401).json({ error: error.message })
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash)
-    if (!valid) {
-      return res.status(401).json({ error: 'Identifiants invalides' })
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    )
+    // Récupérer le rôle depuis notre table users
+    const user = await prisma.user.findUnique({
+      where: { id: data.user.id }
+    })
 
     return res.status(200).json({
-      token,
-      user: { id: user.id, email: user.email, role: user.role }
+      token: data.session.access_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        role: user?.role || 'CANDIDAT'
+      }
     })
   } catch (error) {
     return res.status(500).json({ error: 'Erreur serveur' })
