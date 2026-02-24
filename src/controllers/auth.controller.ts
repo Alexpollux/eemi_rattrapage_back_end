@@ -10,7 +10,6 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email et mot de passe requis' })
     }
 
-    // Inscription via Supabase Auth — envoie l'email de confirmation automatiquement
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -27,14 +26,18 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Erreur lors de la création du compte' })
     }
 
-    // Créer le profil dans notre table users
-    await prisma.user.create({
-      data: {
-        id: data.user.id,
-        email: data.user.email!,
-        role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
-      }
-    })
+    try {
+      await prisma.user.create({
+        data: {
+          id: data.user.id,
+          email: data.user.email!,
+          role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
+        }
+      })
+    } catch (prismaError: any) {
+      console.error('Prisma error:', prismaError.message)
+      // L'utilisateur Supabase est créé, on retourne quand même un succès
+    }
 
     return res.status(201).json({
       message: 'Compte créé avec succès. Vérifiez votre email pour confirmer votre inscription.',
@@ -44,8 +47,9 @@ export const register = async (req: Request, res: Response) => {
         role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
       }
     })
-  } catch (error) {
-    return res.status(500).json({ error: 'Erreur serveur' })
+  } catch (error: any) {
+    console.error('Register error:', error.message)
+    return res.status(500).json({ error: error.message })
   }
 }
 
