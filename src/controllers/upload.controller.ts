@@ -14,8 +14,8 @@ const uploadFile = async (
     }
 
     const application = await prisma.application.findUnique({
-  where: { id: String(req.params.id) }
-})
+      where: { id: String(req.params.id) }
+    })
 
     if (!application) {
       return res.status(404).json({ error: 'Candidature introuvable' })
@@ -26,7 +26,19 @@ const uploadFile = async (
     }
 
     const ext = req.file.originalname.split('.').pop()
-    const fileName = `${documentType.toLowerCase()}_${application.firstName.toLowerCase()}_${application.lastName.toLowerCase()}.${ext}`
+    
+    // Nettoyer le nom pour supprimer les caractères spéciaux
+    const sanitize = (str: string) =>
+      str.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .toLowerCase()
+
+    const firstName = sanitize(application.firstName)
+    const lastName = sanitize(application.lastName)
+    const docType = documentType.toLowerCase()
+    
+    const fileName = `${docType}_${firstName}_${lastName}.${ext}`
     const storagePath = `${application.id}/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
