@@ -4,6 +4,7 @@ import prisma from '../lib/prisma'
 
 export interface AuthRequest extends Request {
   userId?: string
+  userAuthId?: string
   userRole?: string
 }
 
@@ -23,13 +24,13 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return res.status(401).json({ error: 'Token invalide ou expiré' })
     }
 
-    // Récupérer le rôle depuis notre table
     const user = await prisma.user.findUnique({
-      where: { id: data.user.id }
+      where: { authId: data.user.id }
     })
 
-    req.userId = data.user.id
-    req.userRole = user?.role || 'CANDIDAT'
+    req.userId = user?.id
+    req.userAuthId = data.user.id
+    req.userRole = user?.role || 'CANDIDATE'
     next()
   } catch {
     return res.status(401).json({ error: 'Token invalide' })

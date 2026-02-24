@@ -4,17 +4,17 @@ import prisma from '../lib/prisma'
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, role } = req.body
+    const { email, password, firstName, lastName, role } = req.body
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis' })
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: 'Tous les champs sont requis' })
     }
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT' }
+        data: { firstName, lastName, role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDATE' }
       }
     })
 
@@ -29,22 +29,25 @@ export const register = async (req: Request, res: Response) => {
     try {
       await prisma.user.create({
         data: {
-          id: data.user.id,
+          authId: data.user.id,
           email: data.user.email!,
-          role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
+          firstName,
+          lastName,
+          role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDATE'
         }
       })
     } catch (prismaError: any) {
       console.error('Prisma error:', prismaError.message)
-      // L'utilisateur Supabase est créé, on retourne quand même un succès
     }
 
     return res.status(201).json({
-      message: 'Compte créé avec succès. Vérifiez votre email pour confirmer votre inscription.',
+      message: 'Compte créé. Vérifiez votre email pour confirmer votre inscription.',
       user: {
         id: data.user.id,
         email: data.user.email,
-        role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDAT'
+        firstName,
+        lastName,
+        role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDATE'
       }
     })
   } catch (error: any) {
@@ -71,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: data.user.id }
+      where: { authId: data.user.id }
     })
 
     return res.status(200).json({
@@ -79,7 +82,9 @@ export const login = async (req: Request, res: Response) => {
       user: {
         id: data.user.id,
         email: data.user.email,
-        role: user?.role || 'CANDIDAT'
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        role: user?.role || 'CANDIDATE'
       }
     })
   } catch (error: any) {

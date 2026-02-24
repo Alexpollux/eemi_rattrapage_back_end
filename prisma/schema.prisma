@@ -8,45 +8,100 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  CANDIDAT
+enum UserRole {
+  CANDIDATE
   ADMIN
 }
 
-enum Status {
+enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
 }
 
+enum DocumentType {
+  TRANSCRIPT
+  DIPLOMA
+  IDENTITY
+  VITALE
+  PHOTO
+  CV
+  PORTFOLIO
+}
+
 model User {
-  id          String       @id @db.Uuid
-  email       String       @unique
-  role        Role         @default(CANDIDAT)
-  createdAt   DateTime     @default(now())
-  application Application?
+  id           String        @id @default(uuid())
+  authId       String        @unique
+  email        String        @unique
+  firstName    String
+  lastName     String
+  role         UserRole      @default(CANDIDATE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
 
   @@map("users")
 }
 
 model Application {
-  id                  String   @id @default(uuid()) @db.Uuid
-  userId              String   @unique @db.Uuid
-  firstName           String
-  lastName            String
-  phone               String
-  birthDate           DateTime
-  currentLevel        String
-  currentSchool       String
-  desiredProgram      String
-  cvUrl               String?
-  motivationLetterUrl String?
-  idDocumentUrl       String?
-  status              Status   @default(PENDING)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program String
+  rhythm  String
+  campus  String
+
+  firstName      String
+  lastName       String
+  address        String
+  city           String
+  postalCode     String
+  country        String
+  email          String
+  phone          String
+  dateOfBirth    DateTime
+  cityOfBirth    String
+  countryOfBirth String
+  nationality    String
+  needsVisa      Boolean  @default(false)
+
+  diplomaTitle  String
+  diplomaDomain String
+  diplomaYear   String
+  institution   String
+
+  language      String
+  languageLevel String
+  motherTongue  String
+
+  motivationLetter String
+  discoveryChannel String
+  discoveryDetails String
+
+  hasDisability   Boolean           @default(false)
+  status          ApplicationStatus @default(PENDING)
+  statusUpdatedAt DateTime?
+  submittedAt     DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  documents ApplicationDocument[]
 
   @@map("applications")
+}
+
+model ApplicationDocument {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  type        DocumentType
+  fileName    String
+  storagePath String
+  mimeType    String
+  fileSize    Int
+  createdAt   DateTime     @default(now())
+
+  @@map("application_documents")
 }
