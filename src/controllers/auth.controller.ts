@@ -70,7 +70,6 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: error.message })
     }
 
-    // Récupérer le rôle depuis notre table users
     const user = await prisma.user.findUnique({
       where: { id: data.user.id }
     })
@@ -83,7 +82,8 @@ export const login = async (req: Request, res: Response) => {
         role: user?.role || 'CANDIDAT'
       }
     })
-  } catch (error) {
-    return res.status(500).json({ error: 'Erreur serveur' })
+  } catch (error: any) {
+    console.error('Login error:', error.message)
+    return res.status(500).json({ error: error.message })
   }
 }
