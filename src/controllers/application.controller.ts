@@ -136,3 +136,21 @@ export const updateStatus = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
+
+export const updateDocuments = async (req: AuthRequest, res: Response) => {
+  try {
+    const { cvUrl, idDocumentUrl } = req.body
+
+    const application = await prisma.application.update({
+      where: { id: String(req.params.id) },
+      data: {
+        cvUrl: cvUrl || undefined,
+        idDocumentUrl: idDocumentUrl || undefined
+      }
+    })
+
+    return res.status(200).json(application)
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}

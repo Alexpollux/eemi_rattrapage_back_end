@@ -8,17 +8,20 @@ const uploadFile = async (req: AuthRequest, res: Response, folder: string) => {
       return res.status(400).json({ error: 'Fichier manquant' })
     }
 
-    const ext = req.file.originalname.split('.').pop()
-
     const sanitize = (str: string) =>
       str.normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9]/g, '_')
         .toLowerCase()
 
-    const userId = sanitize(req.userId || 'user')
-    const fileName = `${folder}_${userId}_${Date.now()}.${ext}`
-    const storagePath = `temp/${fileName}`
+    const { firstName, lastName } = req.body
+
+    const firstNameClean = sanitize(firstName || 'user')
+    const lastNameClean = sanitize(lastName || 'unknown')
+
+    const ext = req.file.originalname.split('.').pop()
+    const fileName = `${folder}_${firstNameClean}_${lastNameClean}.${ext}`
+    const storagePath = `candidatures/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('candidature-docs')

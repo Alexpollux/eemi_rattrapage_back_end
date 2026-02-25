@@ -4,7 +4,8 @@ import {
   getMyApplication,
   getAllApplications,
   getApplicationById,
-  updateStatus
+  updateStatus,
+  updateDocuments
 } from '../controllers/application.controller'
 import { authenticate, requireAdmin } from '../middleware/auth.middleware'
 
@@ -138,5 +139,7 @@ router.get('/:id', authenticate, requireAdmin, getApplicationById)
  *         description: Statut invalide
  */
 router.patch('/:id/status', authenticate, requireAdmin, updateStatus)
+
+router.patch('/:id/documents', authenticate, updateDocuments)
 
 export default router
