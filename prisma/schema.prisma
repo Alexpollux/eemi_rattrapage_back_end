@@ -19,16 +19,6 @@ enum ApplicationStatus {
   REJECTED
 }
 
-enum DocumentType {
-  TRANSCRIPT
-  DIPLOMA
-  IDENTITY
-  VITALE
-  PHOTO
-  CV
-  PORTFOLIO
-}
-
 model User {
   id           String        @id @default(uuid())
   authId       String        @unique
@@ -48,60 +38,29 @@ model Application {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  program String
-  rhythm  String
-  campus  String
+  program      String
+  rhythm       String
+  campus       String
+  currentLevel String
+  currentSchool String
 
-  firstName      String
-  lastName       String
-  address        String
-  city           String
-  postalCode     String
-  country        String
-  email          String
-  phone          String
-  dateOfBirth    DateTime
-  cityOfBirth    String
-  countryOfBirth String
-  nationality    String
-  needsVisa      Boolean  @default(false)
-
-  diplomaTitle  String
-  diplomaDomain String
-  diplomaYear   String
-  institution   String
-
-  language      String
-  languageLevel String
-  motherTongue  String
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  dateOfBirth  DateTime
+  nationality  String
 
   motivationLetter String
   discoveryChannel String
-  discoveryDetails String
 
-  hasDisability   Boolean           @default(false)
+  cvUrl         String?
+  idDocumentUrl String?
+
   status          ApplicationStatus @default(PENDING)
   statusUpdatedAt DateTime?
-  submittedAt     DateTime          @default(now())
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  documents ApplicationDocument[]
-
   @@map("applications")
-}
-
-model ApplicationDocument {
-  id            String      @id @default(uuid())
-  applicationId String
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  type        DocumentType
-  fileName    String
-  storagePath String
-  mimeType    String
-  fileSize    Int
-  createdAt   DateTime     @default(now())
-
-  @@map("application_documents")
 }

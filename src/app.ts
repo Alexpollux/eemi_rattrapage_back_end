@@ -20,6 +20,6 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/applications', applicationRoutes)
-app.use('/api/applications', uploadRoutes)
+app.use('/api/upload', uploadRoutes)
 
 export default app

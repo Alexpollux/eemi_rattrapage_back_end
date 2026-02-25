@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { Response } from 'express'
 import prisma from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 
@@ -13,33 +13,26 @@ export const createApplication = async (req: AuthRequest, res: Response) => {
     }
 
     const {
-      program, rhythm, campus,
-      firstName, lastName, address, city, postalCode, country,
-      email, phone, dateOfBirth, cityOfBirth, countryOfBirth,
-      nationality, needsVisa,
-      diplomaTitle, diplomaDomain, diplomaYear, institution,
-      language, languageLevel, motherTongue,
-      motivationLetter, discoveryChannel, discoveryDetails,
-      hasDisability
+      program, rhythm, campus, currentLevel, currentSchool,
+      firstName, lastName, email, phone, dateOfBirth, nationality,
+      motivationLetter, discoveryChannel,
+      cvUrl, idDocumentUrl
     } = req.body
 
     const application = await prisma.application.create({
       data: {
         userId: req.userId!,
-        program, rhythm, campus,
-        firstName, lastName, address, city, postalCode, country,
-        email, phone,
+        program, rhythm, campus, currentLevel, currentSchool,
+        firstName, lastName, email, phone,
         dateOfBirth: new Date(dateOfBirth),
-        cityOfBirth, countryOfBirth, nationality,
-        needsVisa: needsVisa === true || needsVisa === 'true',
-        diplomaTitle, diplomaDomain, diplomaYear, institution,
-        language, languageLevel, motherTongue,
-        motivationLetter, discoveryChannel, discoveryDetails,
-        hasDisability: hasDisability ?? false
+        nationality,
+        motivationLetter, discoveryChannel,
+        cvUrl: cvUrl || null,
+        idDocumentUrl: idDocumentUrl || null
       }
     })
 
-    return res.status(201).json({ id: application.id })
+    return res.status(201).json(application)
   } catch (error: any) {
     console.error('createApplication error:', error.message)
     return res.status(500).json({ error: 'Erreur serveur' })
@@ -49,8 +42,7 @@ export const createApplication = async (req: AuthRequest, res: Response) => {
 export const getMyApplication = async (req: AuthRequest, res: Response) => {
   try {
     const application = await prisma.application.findFirst({
-      where: { userId: req.userId },
-      include: { documents: true }
+      where: { userId: req.userId }
     })
 
     if (!application) {
@@ -92,8 +84,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response) => {
         skip,
         take: limitNum,
         include: {
-          user: { select: { email: true, firstName: true, lastName: true } },
-          documents: true
+          user: { select: { email: true, firstName: true, lastName: true } }
         }
       }),
       prisma.application.count({ where })
@@ -110,8 +101,7 @@ export const getApplicationById = async (req: AuthRequest, res: Response) => {
     const application = await prisma.application.findUnique({
       where: { id: String(req.params.id) },
       include: {
-        user: { select: { email: true, firstName: true, lastName: true } },
-        documents: true
+        user: { select: { email: true, firstName: true, lastName: true } }
       }
     })
 
