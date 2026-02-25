@@ -14,6 +14,7 @@ export const register = async (req: Request, res: Response) => {
       email,
       password,
       options: {
+        emailRedirectTo: `${process.env.FRONTEND_URL}/auth/callback`,
         data: { firstName, lastName, role: role === 'ADMIN' ? 'ADMIN' : 'CANDIDATE' }
       }
     })
